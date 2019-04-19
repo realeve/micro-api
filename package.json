@@ -1,0 +1,23 @@
+{
+    "name": "micro-api",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "directories": {
+        "test": "test"
+    },
+    "dependencies": {
+        "dayjs": "^1.8.12",
+        "fastify": "^2.2.0",
+        "fastify-redis": "^3.0.0",
+        "ramda": "^0.26.1",
+        "redis": "^2.8.0",
+        "fastify-autoload": "^0.6.0",
+        "fastify-cli": "^1.0.0"
+    },
+    "scripts": {
+        "start": "pm2 start ./src/app.js  -i 8",
+        "dev": "fastify start -l info -P ./src/app.js",
+        "build": "pm2 start ./src/index.js -i 8"
+    }
+}
