@@ -9,10 +9,10 @@
     "dependencies": {
         "dayjs": "^1.8.12",
         "fastify": "^2.2.0",
-        "fastify-redis": "^3.0.0",
+        "fastify-autoload": "^0.6.0",
+        "fastify-mysql": "^0.2.0",
         "ramda": "^0.26.1",
-        "redis": "^2.8.0",
-        "fastify-autoload": "^0.6.0"
+        "redis": "^2.8.0"
     },
     "scripts": {
         "start": "pm2 start ./src/app.js  -i 8",

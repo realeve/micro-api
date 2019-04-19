@@ -2,8 +2,16 @@
 
 const path = require('path');
 const AutoLoad = require('fastify-autoload');
+const { mysql: config } = require('./util/db');
 const fastify = require('fastify')({
-  logger: false
+  logger: 1 || false
+});
+
+fastify.register(require('fastify-mysql'), {
+  promise: true,
+  connectionString: `mysql://${config.username}:${config.password}@${
+    config.host
+  }:${config.port}/${config.db}`
 });
 
 fastify.register(AutoLoad, {
