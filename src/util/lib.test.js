@@ -14,20 +14,20 @@ test('缓存键值', () => {
   ).toBeFalsy();
 });
 
-test('获取数据格式', () => {
-  expect(lib.getDataFormat({ cache: 'json' })).toMatchObject({
-    format: 'json',
-    cache: 0
-  });
-  expect(lib.getDataFormat({ cache: 2 })).toMatchObject({
-    format: 'json',
-    cache: 120
-  });
-  expect(lib.getDataFormat({ cache: 'array' })).toMatchObject({
-    format: 'array',
-    cache: 0
-  });
-});
+// test('获取数据格式', () => {
+//   expect(lib.getDataFormat({ cache: 'json' })).toMatchObject({
+//     format: 'json',
+//     cache: 0
+//   });
+//   expect(lib.getDataFormat({ cache: 2 })).toMatchObject({
+//     format: 'json',
+//     cache: 120
+//   });
+//   expect(lib.getDataFormat({ cache: 'array' })).toMatchObject({
+//     format: 'array',
+//     cache: 0
+//   });
+// });
 
 test('时间', () => {
   expect(lib.now()).toHaveLength(19);

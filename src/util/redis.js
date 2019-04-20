@@ -11,7 +11,11 @@ const connect = () =>
 
 const getCache = (cient) => promisify(cient.get).bind(cient);
 const setCache = (cient) => (key, value, time = 0) => {
-  cient.set(key, JSON.stringify(value), 'EX', time ? time : 60 * 60 * 24);
+  if (time > 0) {
+    cient.set(key, JSON.stringify(value), 'EX', time);
+  } else {
+    cient.set(key, JSON.stringify(value));
+  }
 };
 
 module.exports = { getCache, setCache, connect };

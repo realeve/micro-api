@@ -15,28 +15,11 @@ const getKey = (query) => {
     }
     props = props || [];
     let propKey = Object.entries(props).map(([k, v]) => `${k}_${v}`).join('_');
-    propKey = propKey.length ? `_${propKey}` : ''
-    let format = cache ? '_cache' + cache : '';
-    return `${id}_${nonce}${format}${propKey}`;
+    propKey = propKey.length ? `_${propKey}` : '';
+    let cacheStr = cache ? '_' + cache : ''
+    return `${id}_${nonce}${cacheStr}${propKey}`;
 };
 module.exports.getKey = getKey;
-
-const getDataFormat = (query) => {
-    let {
-        cache
-    } = query;
-    if (['json', 'array'].includes(cache)) {
-        return {
-            format: cache,
-            cache: 0
-        };
-    }
-    return {
-        format: 'json',
-        cache: Number(cache * 60)
-    };
-};
-module.exports.getDataFormat = getDataFormat;
 
 const now = () => dayjs().format('YYYY-MM-DD HH:mm:ss');
 const future = (seconds) =>
@@ -89,7 +72,6 @@ const readDb = async(fastify, params) => {
     let res = {
         rows: rows.length,
         dates,
-        ip: '待加入',
         header: rows.length ? Object.keys(rows[0]) : [],
         title,
         time: '待加入',
@@ -129,18 +111,22 @@ const getApiSetting = async(connection, params) => {
     return rows[0];
 }
 
+// 转换数组
+const handleData = (redisRes, mode) => {
+    if (mode === 'json') {
+        return redisRes;
+    }
+    redisRes.data = redisRes.data.map(item => Object.values(item));
+    return redisRes;
+}
+
 module.exports.handleReq = async(req, fastify) => {
     // let client = redis.connect();
+    let timeStart = new Date().getTime();
     let getCache = redis.getCache(client);
 
     let key = getKey(req.query);
     let data = key ? await getCache(key) : null;
-
-    let {
-        cache,
-        format
-    } = getDataFormat(req.query);
-
     if (R.isNil(data)) {
         // console.log('read from redis')
         let setCache = redis.setCache(client);
@@ -152,24 +138,42 @@ module.exports.handleReq = async(req, fastify) => {
             return result;
         }
 
+        let {
+            cache,
+            mode
+        } = req.query;
+
         let redisRes = {
             ...result,
-            cache: {
+            status: 200,
+            key
+        };
+
+        if (cache > 0) {
+            redisRes.cache = {
                 date: now(),
                 expires: future(cache),
                 cache,
                 from: 'redis'
-            },
-            status: 200,
-            key
-        };
-        setCache(key, redisRes, 60);
+            }
+            setCache(key, redisRes, cache);
+        }
+
+        // handle Arr
+        redisRes = handleData(redisRes, mode);
+
         data = Object.assign(redisRes, {
             cache: {
                 from: 'database'
             }
         });
+
+    } else {
+        data = JSON.parse(data)
     }
+
+    data.ip = req.ip;
+    data.time = (new Date().getTime() - timeStart) + 'ms';
 
     // 关闭连接
     // client.quit();
