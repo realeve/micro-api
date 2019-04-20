@@ -65,3 +65,10 @@ package-lock.json
 examples/typescript-server.js
 test/types/index.js
 /node_modules
+/src/util/db.js
+src/util/db.js
+
+
+# git rm -r --cached .
+# git add .
+# git commit -m 'update .gitignore'
