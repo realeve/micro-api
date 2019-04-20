@@ -111,7 +111,7 @@ const readDb = async(fastify, params) => {
     let paramValues = R.values(R.pick(param, params))
     let sql = parseSql(sqlstr, paramValues);
 
-    console.log(sql)
+    // console.log(sql)
     const [rows, fields] = await connection.query(sql);
 
     let res = {
