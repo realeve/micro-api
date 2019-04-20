@@ -16,7 +16,7 @@
         "sqlstring": "^2.3.1"
     },
     "scripts": {
-        "start": "pm2 start ./src/app.js  -i 8",
+        "start": "pm2 start ./src/app.js  -i 2",
         "dev": "node ./src/app.js",
         "test": "jest --detectOpenHandles --collectCoverage"
     },

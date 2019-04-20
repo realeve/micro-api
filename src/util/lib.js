@@ -104,7 +104,8 @@ const readDb = async (fastify, params) => {
   let sql = parseSql(sqlstr, paramValues);
 
   // console.log(sql)
-  const [rows, fields] = await connection.query(sql);
+  let [rows, fields] = await connection.query(sql);
+  rows = handleCUD(sql, rows);
 
   let res = {
     rows: rows.length,
@@ -118,6 +119,32 @@ const readDb = async (fastify, params) => {
 
   connection.release();
   return res;
+};
+
+// 处理写、改、删的返回数据
+const handleCUD = (sql, rows) => {
+  let mode = sql
+    .trim()
+    .toLowerCase()
+    .slice(0, 7);
+
+  if (mode === 'insert ') {
+    let { insertId: id, affectedRows } = rows;
+    rows = [
+      {
+        id,
+        affectedRows
+      }
+    ];
+  } else if (['udpate ', 'delete '].includes(mode)) {
+    let { affectedRows } = rows;
+    rows = [
+      {
+        affectedRows
+      }
+    ];
+  }
+  return rows;
 };
 
 const getApiSetting = async (connection, params) => {
