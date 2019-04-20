@@ -1,6 +1,7 @@
 const R = require('ramda');
 const dayjs = require('dayjs');
 const redis = require('./redis');
+let client = redis.connect();
 
 const getKey = (query) => {
     let {
@@ -51,9 +52,9 @@ const parseSql = (sql, param = '') => {
     }
 }
 
-const readDb = async(fastify, client, params) => {
+const readDb = async(fastify, params) => {
     const connection = await fastify.mysql.getConnection();
-    let setting = await getApiSetting(connection, client, params);
+    let setting = await getApiSetting(connection, params);
     if (R.isNil(setting)) {
         return {
             status: 401,
@@ -100,7 +101,7 @@ const readDb = async(fastify, client, params) => {
     return res;
 }
 
-const getApiSetting = async(connection, client, params) => {
+const getApiSetting = async(connection, params) => {
     let {
         id,
         nonce,
@@ -129,7 +130,7 @@ const getApiSetting = async(connection, client, params) => {
 }
 
 module.exports.handleReq = async(req, fastify) => {
-    let client = redis.connect();
+    // let client = redis.connect();
     let getCache = redis.getCache(client);
 
     let key = getKey(req.query);
@@ -141,15 +142,13 @@ module.exports.handleReq = async(req, fastify) => {
     } = getDataFormat(req.query);
 
     if (R.isNil(data)) {
-
         // console.log('read from redis')
-
         let setCache = redis.setCache(client);
-        let result = await readDb(fastify, client, req.query);
+        let result = await readDb(fastify, req.query);
 
         // 校验失败
         if (result.status) {
-            client.quit();
+            // client.quit();
             return result;
         }
 
@@ -173,6 +172,6 @@ module.exports.handleReq = async(req, fastify) => {
     }
 
     // 关闭连接
-    client.quit();
+    // client.quit();
     return data;
 };
