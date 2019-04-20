@@ -45,19 +45,92 @@ const future = (seconds) =>
 module.exports.now = now;
 module.exports.future = future;
 
-const readDb = async(fastify) => {
+const parseSql = (sql, param = '') => {
+    if (param.length === 0) {
+        return sql;
+    }
+}
+
+const readDb = async(fastify, client, params) => {
     const connection = await fastify.mysql.getConnection();
-    const [rows, fields] = await connection.query(
-        'SELECT dept_name name,id value FROM sys_dept'
-    );
+    let setting = await getApiSetting(connection, client, params);
+    if (R.isNil(setting)) {
+        return {
+            status: 401,
+            msg: 'id or nonce is invalid.'
+        };
+    }
+
+    // {
+    //     sqlstr: 'select id,db_name 数据库名,db_key 配置项键值 from sys_database',
+    //     param: '',
+    //     api_name: '数据库列表',
+    //     db_key: 'db1',
+    //     db_name: '接口管理'
+    // }
+
+    let {
+        sqlstr,
+        param: paramStr,
+        db_name,
+        api_name: title,
+    } = setting;
+    let sql = parseSql(sqlstr);
+
+    let dates = [];
+    let param = paramStr.split(',');
+    if (param.includes('tstart') && param.includes('tend')) {
+        dates = [params.tstart, params.tend];
+    }
+
+    const [rows, fields] = await connection.query(sql);
+
+    let res = {
+        rows: rows.length,
+        dates,
+        ip: '待加入',
+        header: rows.length ? Object.keys(rows[0]) : [],
+        title,
+        time: '待加入',
+        source: '数据来源：' + db_name,
+        data: rows,
+    }
+
     connection.release();
-    return rows;
+    return res;
+}
+
+const getApiSetting = async(connection, client, params) => {
+    let {
+        id,
+        nonce,
+        ...props
+    } = params;
+
+    // API列表
+    let getCache = redis.getCache(client);
+    let key = `api${id}_${nonce}`;
+    let data = await getCache(key);
+    if (data) {
+        return JSON.parse(data);
+    }
+
+    // console.log('read api setting from redis')
+
+    const [rows, fields] = await connection.query(
+        'select a.sqlstr,rtrim(ifnull(a.param,\'\')) param,a.api_name,b.db_key,b.db_name FROM sys_api a INNER JOIN sys_database b on a.db_id = b.id where a.id=? and a.nonce=?', [id, nonce]
+    );
+
+    if (rows) {
+        let setCache = redis.setCache(client);
+        setCache(key, rows[0], 30 * 24 * 60 * 60);
+    }
+    return rows[0];
 }
 
 module.exports.handleReq = async(req, fastify) => {
     let client = redis.connect();
     let getCache = redis.getCache(client);
-    let setCache = redis.setCache(client);
 
     let key = getKey(req.query);
     let data = key ? await getCache(key) : null;
@@ -68,15 +141,27 @@ module.exports.handleReq = async(req, fastify) => {
     } = getDataFormat(req.query);
 
     if (R.isNil(data)) {
-        let result = await readDb(fastify)
+
+        // console.log('read from redis')
+
+        let setCache = redis.setCache(client);
+        let result = await readDb(fastify, client, req.query);
+
+        // 校验失败
+        if (result.status) {
+            client.quit();
+            return result;
+        }
+
         let redisRes = {
-            data: result,
+            ...result,
             cache: {
                 date: now(),
                 expires: future(cache),
                 cache,
                 from: 'redis'
             },
+            status: 200,
             key
         };
         setCache(key, redisRes, 60);
