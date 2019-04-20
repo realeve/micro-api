@@ -1,4 +1,5 @@
 const lib = require('./lib');
+let { escape } = require('sqlstring');
 
 test('缓存键值', () => {
   expect(lib.getKey({ id: 2, nonce: 'a' })).toBe('2_a');
@@ -67,4 +68,11 @@ test('sql 格式化', () => {
   expect(lib.parseSql('select a from a where id =?', ["'a"])).toBe(
     "select a from a where id ='\\'a'"
   );
+});
+
+test('防注入', () => {
+  expect(escape("' or 1=1")).toBe("'\\' or 1=1'");
+  expect(escape([1, 2, 3])).toBe('1, 2, 3');
+  expect(escape(['a', 'b', 3])).toBe("'a', 'b', 3");
+  expect(escape("tes' or 1=1 -- ")).toBe("'tes\\' or 1=1 -- '");
 });

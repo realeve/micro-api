@@ -1,6 +1,12 @@
 const R = require('ramda');
 const dayjs = require('dayjs');
 const redis = require('./redis');
+// 转义防注入 
+let {
+    escape
+} = require('sqlstring');
+
+
 let client = redis.connect();
 
 const getKey = (query) => {
@@ -34,21 +40,21 @@ const formatItem = item => {
         return item;
     }
     // 防 SQL 注入
-    return `'${item.replace(/'/g,"\\'")}'`;
+    return `'${item.replace(/'/g,"\\'").replace(/"/g,'\\"')}'`;
 }
 
 const parseSql = (sql, param = '') => {
     if (param.length === 0) {
         return sql;
     }
-    param = param.map(item => {
-        if (R.type(item) === 'Array') {
-            item = item.map(i => formatItem(i));
-            return item.join(',');
-        }
-        return formatItem(item);
-    });
-
+    // param = param.map(item => {
+    //     if (R.type(item) === 'Array') {
+    //         item = item.map(i => formatItem(i));
+    //         return item.join(',');
+    //     }
+    //     return formatItem(item);
+    // });
+    param = R.map(escape)(param);
     let arr = sql.trim().split('?');
     arr = R.filter(item => item.length)(arr);
 
@@ -143,7 +149,7 @@ const getApiSetting = async(connection, params) => {
         'select a.sqlstr,rtrim(ifnull(a.param,\'\')) param,a.api_name,b.db_key,b.db_name FROM sys_api a INNER JOIN sys_database b on a.db_id = b.id where a.id=? and a.nonce=?', [id, nonce]
     );
 
-    if (rows && !!rows[0].err) {
+    if (rows && !R.isNil(rows[0]) && !R.isNil(rows[0].err)) {
         let setCache = redis.setCache(client);
         setCache(key, rows[0], 30 * 24 * 60 * 60);
     }
