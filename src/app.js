@@ -9,9 +9,9 @@ const fastify = require('fastify')({
 
 fastify.register(require('fastify-mysql'), {
   promise: true,
-  connectionString: `mysql://${config.username}:${config.password}@${
-    config.host
-  }:${config.port}/${config.db}`
+  connectionString: `mysql://${config.user}:${config.password}@${config.host}:${
+    config.port
+  }/${config.database}`
 });
 
 fastify.register(AutoLoad, {

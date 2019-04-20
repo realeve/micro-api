@@ -1,7 +1,7 @@
 module.exports.mysql = {
   host: 'localhost',
   port: '3306',
-  username: 'root',
+  user: 'root',
   password: 'root',
-  db: 'api_sheet_manager'
+  database: 'api_sheet_manager'
 };
