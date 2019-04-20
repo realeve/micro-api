@@ -1,22 +1,24 @@
 const R = require('ramda');
 const dayjs = require('dayjs');
-const {
-    getCache,
-    setCache
-} = require('./redis');
+const redis = require('./redis');
 
 const getKey = (query) => {
     let {
         id,
         nonce,
-        cache
+        cache,
+        ...props
     } = query;
-    if (R.isNil(id)) {
+    if (R.isNil(id) || R.isNil(nonce)) {
         return false;
     }
+    props = props || [];
+    let propKey = Object.entries(props).map(([k, v]) => `${k}_${v}`).join('_');
+    propKey = propKey.length ? `_${propKey}` : ''
     let format = cache ? '_cache' + cache : '';
-    return `${id}_${nonce}${format}`;
+    return `${id}_${nonce}${format}${propKey}`;
 };
+module.exports.getKey = getKey;
 
 const getDataFormat = (query) => {
     let {
@@ -29,16 +31,19 @@ const getDataFormat = (query) => {
         };
     }
     return {
-        format: cache,
+        format: 'json',
         cache: Number(cache * 60)
     };
 };
+module.exports.getDataFormat = getDataFormat;
 
 const now = () => dayjs().format('YYYY-MM-DD HH:mm:ss');
 const future = (seconds) =>
     dayjs()
     .add(seconds, 'second')
     .format('YYYY-MM-DD HH:mm:ss');
+module.exports.now = now;
+module.exports.future = future;
 
 const readDb = async(fastify) => {
     const connection = await fastify.mysql.getConnection();
@@ -50,6 +55,10 @@ const readDb = async(fastify) => {
 }
 
 module.exports.handleReq = async(req, fastify) => {
+    let client = redis.connect();
+    let getCache = redis.getCache(client);
+    let setCache = redis.setCache(client);
+
     let key = getKey(req.query);
     let data = key ? await getCache(key) : null;
 
@@ -77,5 +86,8 @@ module.exports.handleReq = async(req, fastify) => {
             }
         });
     }
+
+    // 关闭连接
+    client.quit();
     return data;
 };

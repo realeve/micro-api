@@ -16,6 +16,10 @@
     },
     "scripts": {
         "start": "pm2 start ./src/app.js  -i 8",
-        "dev": "node ./src/app.js"
+        "dev": "node ./src/app.js",
+        "test": "jest --detectOpenHandles --collectCoverage"
+    },
+    "devDependencies": {
+        "jest": "^24.7.1"
     }
 }
