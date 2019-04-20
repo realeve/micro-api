@@ -63,4 +63,8 @@ test('sql 格式化', () => {
       'b'
     ])
   ).toBe("delete from a where id in (1,2,'3??' ) and b='b'");
+
+  expect(lib.parseSql('select a from a where id =?', ["'a"])).toBe(
+    "select a from a where id ='\\'a'"
+  );
 });

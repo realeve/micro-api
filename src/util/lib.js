@@ -33,7 +33,8 @@ const formatItem = item => {
     if (/^\d+$/.test(item)) {
         return item;
     }
-    return `'${item}'`;
+    // 防 SQL 注入
+    return `'${item.replace(/'/g,"\\'")}'`;
 }
 
 const parseSql = (sql, param = '') => {
@@ -63,6 +64,11 @@ const readDb = async(fastify, params) => {
             status: 404,
             msg: 'id or nonce is invalid.'
         };
+    } else if (setting.err) {
+        return {
+            status: 500,
+            msg: setting.err
+        }
     }
 
     // {
@@ -99,6 +105,7 @@ const readDb = async(fastify, params) => {
     let paramValues = R.values(R.pick(param, params))
     let sql = parseSql(sqlstr, paramValues);
 
+    console.log(sql)
     const [rows, fields] = await connection.query(sql);
 
     let res = {
@@ -136,7 +143,7 @@ const getApiSetting = async(connection, params) => {
         'select a.sqlstr,rtrim(ifnull(a.param,\'\')) param,a.api_name,b.db_key,b.db_name FROM sys_api a INNER JOIN sys_database b on a.db_id = b.id where a.id=? and a.nonce=?', [id, nonce]
     );
 
-    if (rows) {
+    if (rows && !!rows[0].err) {
         let setCache = redis.setCache(client);
         setCache(key, rows[0], 30 * 24 * 60 * 60);
     }
