@@ -4,7 +4,7 @@ const path = require('path');
 const AutoLoad = require('fastify-autoload');
 const { mysql: config } = require('./util/db');
 const fastify = require('fastify')({
-  logger: false
+  logger: 1 || false
 });
 
 fastify.register(require('fastify-mysql'), {

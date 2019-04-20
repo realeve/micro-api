@@ -29,18 +29,38 @@ const future = (seconds) =>
 module.exports.now = now;
 module.exports.future = future;
 
+const formatItem = item => {
+    if (/^\d+$/.test(item)) {
+        return item;
+    }
+    return `'${item}'`;
+}
+
 const parseSql = (sql, param = '') => {
     if (param.length === 0) {
         return sql;
     }
+    param = param.map(item => {
+        if (R.type(item) === 'Array') {
+            item = item.map(i => formatItem(i));
+            return item.join(',');
+        }
+        return formatItem(item);
+    });
+
+    let arr = sql.trim().split('?');
+    arr = R.filter(item => item.length)(arr);
+
+    return arr.map((item, i) => item + (param[i] || '')).join(' ');
 }
+module.exports.parseSql = parseSql;
 
 const readDb = async(fastify, params) => {
     const connection = await fastify.mysql.getConnection();
     let setting = await getApiSetting(connection, params);
     if (R.isNil(setting)) {
         return {
-            status: 401,
+            status: 404,
             msg: 'id or nonce is invalid.'
         };
     }
@@ -59,13 +79,25 @@ const readDb = async(fastify, params) => {
         db_name,
         api_name: title,
     } = setting;
-    let sql = parseSql(sqlstr);
 
     let dates = [];
     let param = paramStr.split(',');
     if (param.includes('tstart') && param.includes('tend')) {
         dates = [params.tstart, params.tend];
     }
+
+    // param 参数是否齐全
+    let invalidParam = R.difference(param, Object.keys(params));
+    if (invalidParam.length) {
+        return {
+            status: 401,
+            msg: `param '${invalidParam.join(',')}' required`
+        };
+    }
+
+    // 处理sql
+    let paramValues = R.values(R.pick(param, params))
+    let sql = parseSql(sqlstr, paramValues);
 
     const [rows, fields] = await connection.query(sql);
 
