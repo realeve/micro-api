@@ -112,7 +112,6 @@ const readDb = async (fastify, params) => {
     dates,
     header: rows.length ? Object.keys(rows[0]) : [],
     title,
-    time: '待加入',
     source: '数据来源：' + db_name,
     data: rows
   };
@@ -129,18 +128,18 @@ const handleCUD = (sql, rows) => {
     .slice(0, 7);
 
   if (mode === 'insert ') {
-    let { insertId: id, affectedRows } = rows;
+    let { insertId: id, affectedRows: affected_rows } = rows;
     rows = [
       {
         id,
-        affectedRows
+        affected_rows
       }
     ];
   } else if (['udpate ', 'delete '].includes(mode)) {
-    let { affectedRows } = rows;
+    let { affected_rows } = rows;
     rows = [
       {
-        affectedRows
+        affected_rows
       }
     ];
   }
@@ -222,14 +221,21 @@ module.exports.handleReq = async (req, fastify) => {
     data = Object.assign(redisRes, {
       cache: {
         from: 'database'
-      }
+      },
+      ip: req.ip,
+      time: new Date().getTime() - timeStart + 'ms'
     });
   } else {
-    data = JSON.parse(data);
+    // JSON.stringify,JSON.parse速度较慢，此处用拼接字符串处理
+    // data = JSON.parse(data);
+    return (
+      data.slice(0, -1) +
+      `,"ip":"${req.ip}","time":"${new Date().getTime() - timeStart}ms"}`
+    );
   }
 
-  data.ip = req.ip;
-  data.time = new Date().getTime() - timeStart + 'ms';
+  //   data.ip = req.ip;
+  //   data.time = new Date().getTime() - timeStart + 'ms';
 
   // 关闭连接
   // client.quit();
