@@ -71,14 +71,6 @@ const readDb = async (fastify, params) => {
     };
   }
 
-  // {
-  //     sqlstr: 'select id,db_name 数据库名,db_key 配置项键值 from sys_database',
-  //     param: '',
-  //     api_name: '数据库列表',
-  //     db_key: 'db1',
-  //     db_name: '接口管理'
-  // }
-
   let { sqlstr, param: paramStr, db_name, api_name: title } = setting;
 
   let dates = [];
@@ -104,7 +96,19 @@ const readDb = async (fastify, params) => {
   let sql = parseSql(sqlstr, paramValues);
 
   // console.log(sql)
-  let [rows, fields] = await connection.query(sql);
+  let [rows, fields] = await connection
+    .query(sql)
+    .catch(({ message, code }) => [
+      {
+        status: 500,
+        msg: message,
+        error: code
+      }
+    ]);
+  // 报错
+  if (rows.status) {
+    return rows;
+  }
   rows = handleCUD(sql, rows);
 
   let res = {

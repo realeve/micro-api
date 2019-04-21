@@ -27,12 +27,14 @@ const paramsJsonSchema = {
   },
   required: ['id', 'nonce', '__cache']
 };
-const handleErr = ({ status, msg, ...data }, reply) => {
+const handleErr = ({ status, error, msg, ...data }, reply) => {
   if (status > 299) {
-    const err = new Error();
-    err.statusCode = status;
-    err.message = msg;
-    throw err;
+    // const err = new Error();
+    // err.statusCode = status;
+    // err.message = msg;
+    // throw err;
+    reply.code(status).send({ statusCode: status, error, message: msg });
+    return;
   }
   reply.send(data);
 };

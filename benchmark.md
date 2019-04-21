@@ -60,6 +60,7 @@ autocannon -c 100 -d 40 -o 10 http://127.0.0.1:3000/api/173/a40772a615?type=fast
 
 // 本地测试-(读)-windows+fastify+redis
 autocannon -c 100 -d 40 -o 10 http://127.0.0.1:3000/api/79/d2606592e4/10
+autocannon -c 100 -d 40 -o 10 http://127.0.0.1:3000/api/17/64c0c27545/5?sid=18
 
 // 本地测rds写性能
 autocannon -c 100 -d 40 -o 10 http://127.0.0.1:3000/api/173/a40772a615?type=fastify
