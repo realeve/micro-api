@@ -17,6 +17,7 @@
     },
     "scripts": {
         "start": "pm2 start ./src/app.js  -i max",
+        "bench": "pm2 start ./benchmark.js  -i max",
         "dev": "node ./src/app.js",
         "test": "jest --detectOpenHandles --collectCoverage"
     },
