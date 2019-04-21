@@ -1,18 +1,14 @@
 'use strict';
 const R = require('ramda');
 const lib = require('../../util/lib');
+const {
+  opts,
+  queryStringJsonSchema,
+  paramSchema,
+  handleErr
+} = require('../../util/schema');
 
 module.exports = function(fastify, _, next) {
-  const handleErr = ({ status, msg, ...data }, reply) => {
-    if (status == 200) {
-      reply.send(data);
-      return;
-    }
-    const err = new Error();
-    err.statusCode = status;
-    err.message = msg;
-    throw err;
-  };
   const callback = async function(req, reply) {
     if (req.params.__cache) {
       if (['array', 'json'].includes(req.params.__cache)) {
@@ -38,16 +34,46 @@ module.exports = function(fastify, _, next) {
     );
     handleErr(data, reply);
   };
+  const postCallback = async function(req, reply) {
+    let query = Object.assign(req.query, req.body);
+    let data = await lib.handleReq(
+      {
+        ...req,
+        query
+      },
+      fastify
+    );
+    handleErr(data, reply);
+  };
+
+  fastify.post(
+    '/api',
+    {
+      schema: { body: queryStringJsonSchema }
+    },
+    postCallback
+  );
 
   // http://127.0.0.1:3000/api?id=a&nonce=2&cache=4
-  fastify.get('/api', async function(req, reply) {
-    let data = await lib.handleReq(req, fastify);
-    handleErr(data, reply);
-  });
+  fastify.get(
+    '/api',
+    { schema: { querystring: queryStringJsonSchema } },
+    async function(req, reply) {
+      let data = await lib.handleReq(req, fastify);
+      handleErr(data, reply);
+    }
+  );
 
-  fastify.get('/api/:id/:nonce/:__cache', callback);
-
-  fastify.get('/api/:id/:nonce', callback);
+  fastify.get(
+    '/api/:id/:nonce',
+    {
+      schema: {
+        params: queryStringJsonSchema
+      }
+    },
+    callback
+  );
+  fastify.get('/api/:id/:nonce/:__cache', opts, callback);
 
   next();
 };

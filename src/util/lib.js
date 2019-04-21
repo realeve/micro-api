@@ -8,9 +8,9 @@ let client = redis.connect();
 
 const getKey = (query) => {
   let { id, nonce, cache, ...props } = query;
-  if (R.isNil(id) || R.isNil(nonce)) {
-    return false;
-  }
+  //   if (R.isNil(id) || R.isNil(nonce)) {
+  //     return false;
+  //   }
   props = props || [];
   let propKey = Object.entries(props)
     .map(([k, v]) => `${k}_${v}`)
@@ -203,7 +203,6 @@ module.exports.handleReq = async (req, fastify) => {
 
     let redisRes = {
       ...result,
-      status: 200,
       key
     };
 
