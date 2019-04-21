@@ -43,22 +43,25 @@ module.exports = function(fastify, _, next) {
         handleData(req, reply, query)
     };
 
+    // 经测，使用schema后，rqs从6200降至不足3000，此处关闭，在应用层自定义校验
     fastify.post(
-        '/api', {
-            schema: {
-                body: queryStringJsonSchema
-            }
-        },
+        '/api',
+        //  {
+        //     schema: {
+        //         body: queryStringJsonSchema
+        //     }
+        // },
         postCallback
     );
 
     // http://127.0.0.1:3000/api?id=a&nonce=2&cache=4
     fastify.get(
-        '/api', {
-            schema: {
-                querystring: queryStringJsonSchema
-            }
-        },
+        '/api',
+        //  {
+        //     schema: {
+        //         querystring: queryStringJsonSchema
+        //     }
+        // },
         async function(req, reply) {
             req.query.cache = Number(req.query.cache || 0) * 60;
             let data = await lib.handleReq(req, fastify);
@@ -66,13 +69,15 @@ module.exports = function(fastify, _, next) {
         }
     );
 
-    fastify.get('/api/:id/:nonce', {
-        schema: {
-            params: queryStringJsonSchema
-        }
-    }, callback);
-
-    fastify.get('/api/:id/:nonce/:__cache', opts, callback);
+    fastify.get('/api/:id/:nonce',
+        //  {
+        //     schema: {
+        //         params: queryStringJsonSchema
+        //     }
+        // }, 
+        callback);
+    // opts,
+    fastify.get('/api/:id/:nonce/:__cache', callback);
 
     next();
 };

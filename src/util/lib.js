@@ -8,9 +8,12 @@ let client = redis.connect();
 
 const getKey = (query) => {
   let { id, nonce, cache, ...props } = query;
-  //   if (R.isNil(id) || R.isNil(nonce)) {
-  //     return false;
-  //   }
+  // if (R.isNil(id) || R.isNil(nonce)) {
+  //   return false;
+  // }
+  if (!id || !nonce) {
+    return false;
+  }
   props = props || [];
   let propKey = Object.entries(props)
     .map(([k, v]) => `${k}_${v}`)
@@ -48,9 +51,9 @@ const parseSql = (sql, param = '') => {
   //     }
   //     return formatItem(item);
   // });
-  param = R.map(escape)(param);
+  param = param.map(escape); //(param);
   let arr = sql.trim().split('?');
-  arr = R.filter((item) => item.length)(arr);
+  arr = arr.filter((item) => item.length); //(arr);
 
   return arr.map((item, i) => item + (param[i] || '')).join(' ');
 };
@@ -59,7 +62,7 @@ module.exports.parseSql = parseSql;
 const readDb = async (fastify, params) => {
   const connection = await fastify.mysql.getConnection();
   let setting = await getApiSetting(connection, params);
-  if (R.isNil(setting)) {
+  if (!setting) {
     return {
       status: 404,
       msg: 'id or nonce is invalid.'
@@ -75,7 +78,7 @@ const readDb = async (fastify, params) => {
 
   let dates = [];
   let param = paramStr.trim().split(',');
-  param = R.filter((item) => item.length > 0)(param);
+  param = param.filter((item) => item.length > 0); //(param);
 
   if (param.includes('tstart') && param.includes('tend')) {
     dates = [params.tstart, params.tend];
@@ -168,7 +171,8 @@ const getApiSetting = async (connection, params) => {
     [id, nonce]
   );
 
-  if (rows && !R.isNil(rows[0]) && !R.isNil(rows[0].err)) {
+  // if (rows && !R.isNil(rows[0]) && !R.isNil(rows[0].err)) {
+  if (rows && rows[0] && !rows[0].err) {
     let setCache = redis.setCache(client);
     setCache(key, rows[0], 30 * 24 * 60 * 60);
   }
@@ -191,9 +195,8 @@ module.exports.handleReq = async (req, fastify) => {
 
   let key = getKey(req.query);
   let data = key ? await getCache(key) : null;
-  if (R.isNil(data)) {
+  if (!data) {
     // console.log('read from redis')
-    let setCache = redis.setCache(client);
     let result = await readDb(fastify, req.query);
 
     // 校验失败
@@ -210,6 +213,7 @@ module.exports.handleReq = async (req, fastify) => {
     };
 
     if (cache > 0) {
+      let setCache = redis.setCache(client);
       redisRes.cache = {
         date: now(),
         expires: future(cache),
