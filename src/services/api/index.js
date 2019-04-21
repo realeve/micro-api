@@ -11,28 +11,8 @@ module.exports = function(fastify, _, next) {
       },
       fastify
     );
-    if (typeof data === 'string') {
-      reply.send(data);
-    }
     handleErr(data, reply);
   };
-
-  //   const callback = function(req, reply) {
-  //     if (req.params.__cache) {
-  //       if (['array', 'json'].includes(req.params.__cache)) {
-  //         req.query.mode = req.params.__cache;
-  //         req.query.cache = (req.query.cache || 0) * 60;
-  //       } else {
-  //         req.query.mode = 'json';
-  //         req.query.cache = (req.params.__cache || 0) * 60;
-  //       }
-  //     } else {
-  //       req.query.cache = (req.query.cache || 0) * 60;
-  //     }
-
-  //     let query = Object.assign(req.query, req.params);
-  //     handleData(req, reply, query);
-  //   };
 
   const postCallback = function(req, reply) {
     let query = Object.assign(req.query, req.body);
@@ -42,22 +22,22 @@ module.exports = function(fastify, _, next) {
   // 经测，使用schema后，rqs从6200降至不足3000，此处关闭，在应用层自定义校验
   fastify.post(
     '/api',
-    //  {
-    //     schema: {
-    //         body: queryStringJsonSchema
-    //     }
-    // },
+    {
+      schema: {
+        body: queryStringJsonSchema
+      }
+    },
     postCallback
   );
 
   // http://127.0.0.1:3000/api?id=a&nonce=2&cache=4
   fastify.get(
     '/api',
-    //  {
-    //     schema: {
-    //         querystring: queryStringJsonSchema
-    //     }
-    // },
+    {
+      schema: {
+        querystring: queryStringJsonSchema
+      }
+    },
     async function(req, reply) {
       req.query.cache = (req.query.cache || 0) * 60;
       let data = await lib.handleReq(req, fastify);
@@ -67,11 +47,11 @@ module.exports = function(fastify, _, next) {
 
   fastify.get(
     '/api/:id/:nonce',
-    //  {
-    //     schema: {
-    //         params: queryStringJsonSchema
-    //     }
-    // },
+    {
+      schema: {
+        params: queryStringJsonSchema
+      }
+    },
     function(req, reply) {
       req.query.cache = (req.query.cache || 0) * 60;
       let query = Object.assign(req.query, req.params);
@@ -79,7 +59,7 @@ module.exports = function(fastify, _, next) {
     }
   );
   // opts,
-  fastify.get('/api/:id/:nonce/:__cache', function(req, reply) {
+  fastify.get('/api/:id/:nonce/:__cache', opts, function(req, reply) {
     let cache = req.params.__cache;
     if (['array', 'json'].includes(cache)) {
       req.query.mode = cache;

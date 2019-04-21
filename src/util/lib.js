@@ -11,9 +11,9 @@ const getKey = (query) => {
   // if (R.isNil(id) || R.isNil(nonce)) {
   //   return false;
   // }
-  if (!id || !nonce) {
-    return false;
-  }
+  // if (!id || !nonce) {
+  //   return false;
+  // }
   props = props || [];
   let propKey = Object.entries(props)
     .map(([k, v]) => `${k}_${v}`)
@@ -99,15 +99,13 @@ const readDb = async (fastify, params) => {
   let sql = parseSql(sqlstr, paramValues);
 
   // console.log(sql)
-  let [rows, fields] = await connection
-    .query(sql)
-    .catch(({ message, code }) => [
-      {
-        status: 500,
-        msg: message,
-        error: code
-      }
-    ]);
+  let [rows] = await connection.query(sql).catch(({ message, code }) => [
+    {
+      status: 500,
+      msg: message,
+      error: code
+    }
+  ]);
   // 报错
   if (rows.status) {
     return rows;
@@ -154,7 +152,7 @@ const handleCUD = (sql, rows) => {
 };
 
 const getApiSetting = async (connection, params) => {
-  let { id, nonce, ...props } = params;
+  let { id, nonce } = params;
 
   // API列表
   let getCache = redis.getCache(client);
@@ -166,7 +164,7 @@ const getApiSetting = async (connection, params) => {
 
   // console.log('read api setting from redis')
 
-  const [rows, fields] = await connection.query(
+  const [rows] = await connection.query(
     "select a.sqlstr,rtrim(ifnull(a.param,'')) param,a.api_name,b.db_key,b.db_name FROM sys_api a INNER JOIN sys_database b on a.db_id = b.id where a.id=? and a.nonce=?",
     [id, nonce]
   );
@@ -190,7 +188,7 @@ const handleData = (redisRes, mode) => {
 
 module.exports.handleReq = async (req, fastify) => {
   // let client = redis.connect();
-  // let timeStart = new Date().getTime();
+  let timeStart = new Date().getTime();
   let getCache = redis.getCache(client);
 
   let key = getKey(req.query);
@@ -229,20 +227,14 @@ module.exports.handleReq = async (req, fastify) => {
     data = Object.assign(redisRes, {
       cache: {
         from: 'database'
-      },
-      ip: req.ip
-      // time: new Date().getTime() - timeStart + 'ms'
+      }
     });
   } else {
-    // JSON.stringify,JSON.parse速度较慢，此处用拼接字符串处理
-    // data = JSON.parse(data);
-    return (
-      data.slice(0, -1) + `,"ip":"${req.ip}"}` //,"time":"${new Date().getTime() - timeStart}ms"}`
-    );
+    data = JSON.parse(data);
   }
 
-  //   data.ip = req.ip;
-  //   data.time = new Date().getTime() - timeStart + 'ms';
+  data.ip = req.ip;
+  data.time = new Date().getTime() - timeStart + 'ms';
 
   // 关闭连接
   // client.quit();
