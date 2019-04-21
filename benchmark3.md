@@ -21,6 +21,7 @@ cnpm i pm2 -g
 
 > autocannon -c 100 -d 60 -o 10 http://127.0.0.1:3000/api/3/e4e497e849
 > 17K
+> 17650
 
 ## 3.DB+REDIS
 
@@ -28,6 +29,7 @@ cnpm i pm2 -g
 
 > autocannon -c 100 -d 60 -o 10 http://127.0.0.1:3000/api/3/e4e497e849/10
 > 34K
+> 34448
 
 # 2.http://47.97.155.99:3000 (在 WINDOWS 本地测试)
 
