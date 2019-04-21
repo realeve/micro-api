@@ -190,7 +190,7 @@ const handleData = (redisRes, mode) => {
 
 module.exports.handleReq = async (req, fastify) => {
   // let client = redis.connect();
-  let timeStart = new Date().getTime();
+  // let timeStart = new Date().getTime();
   let getCache = redis.getCache(client);
 
   let key = getKey(req.query);
@@ -230,15 +230,14 @@ module.exports.handleReq = async (req, fastify) => {
       cache: {
         from: 'database'
       },
-      ip: req.ip,
-      time: new Date().getTime() - timeStart + 'ms'
+      ip: req.ip
+      // time: new Date().getTime() - timeStart + 'ms'
     });
   } else {
     // JSON.stringify,JSON.parse速度较慢，此处用拼接字符串处理
     // data = JSON.parse(data);
     return (
-      data.slice(0, -1) +
-      `,"ip":"${req.ip}","time":"${new Date().getTime() - timeStart}ms"}`
+      data.slice(0, -1) + `,"ip":"${req.ip}"}` //,"time":"${new Date().getTime() - timeStart}ms"}`
     );
   }
 
