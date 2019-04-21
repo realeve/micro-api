@@ -94,8 +94,10 @@ cnpm i pm2 -g
 
 > autocannon -c 100 -d 60 -o 10 http://47.105.105.12:9000/api/173/a40772a615?type=fastify
 > 78
+> 4834 rows in 60s
 
 ## 内网写入
 
 > autocannon -c 100 -d 60 -o 10 http://47.105.105.12:9000/api/173/a40772a615?type=fastify
 > 82
+> 4914 rows in 60s
