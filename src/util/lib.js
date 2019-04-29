@@ -205,17 +205,20 @@ module.exports.handleReq = async (req, fastify) => {
 
     let { cache, mode } = req.query;
 
-    let redisRes = {
-      ...result,
-      key
-    };
+    // let redisRes = {
+    //   ...result,
+    //   key
+    // };
+
+    let redisRes = result;
+    let date = dayjs()
+      .toDate()
+      .toUTCString();
 
     if (cache > 0) {
       let setCache = redis.setCache(client);
       redisRes.cache = {
-        date: dayjs()
-          .toDate()
-          .toUTCString(), // last-modified
+        date, // last-modified
         expires: dayjs()
           .add(cache, 'seconds')
           .toDate()
@@ -231,9 +234,7 @@ module.exports.handleReq = async (req, fastify) => {
 
     data = Object.assign(redisRes, {
       cache: {
-        date: dayjs()
-          .toDate()
-          .toUTCString(),
+        date,
         from: 'database',
         cache
       }

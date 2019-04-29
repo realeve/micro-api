@@ -49,32 +49,32 @@ const handleErr = ({ status = 200, error, msg, ...data }, reply, req) => {
   reply.send(data);
 };
 
+// cache test:http://localhost:3000/api/85/579209ce04/0.2
 const handleCache = (cache, data, reply, prevEtag, status) => {
-  var nextEtag = etag(JSON.stringify(data.data));
-  if (prevEtag == nextEtag) {
-    status = 304;
+  let nextEtag = etag(JSON.stringify(data.data));
+  let isChange = prevEtag === nextEtag;
+
+  reply
+    .header('last-modified', cache.date)
+    .header('etag', nextEtag)
+    .header('Connection', 'keep-alive')
+    .header(
+      'cache-control',
+      `must-revalidate,max-age=${cache.cache},s-maxage=${cache.cache}`
+    )
+    .status((status = isChange ? 304 : status));
+
+  if (isChange) {
     // 返回304时不返回任何数据;
-    reply
-      .status(status)
-      .header('etag', nextEtag)
-      .send();
+    reply.header('expires', cache.expires).send({});
     return;
   }
 
   // 如果有expires字段，表明数据在redis中读取出来
   if (cache.expires) {
-    reply
-      .header('expires', cache.expires)
-      .header('last-modified', cache.date)
-      .header('etag', nextEtag)
-      .status(status)
-      .send(data);
+    reply.header('expires', cache.expires).send(data);
   } else {
-    reply
-      .header('last-modified', cache.date)
-      .header('etag', nextEtag)
-      .status(status)
-      .send(data);
+    reply.send(data);
   }
 };
 

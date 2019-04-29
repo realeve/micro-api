@@ -2,15 +2,12 @@
 
 const path = require('path');
 const AutoLoad = require('fastify-autoload');
-
+const helmet = require('fastify-helmet');
 const { mysql: config } = require('./util/db');
 const fastify = require('fastify')({
   ignoreTrailingSlash: true
   // logger: false
 });
-
-// gzip
-// fastify.register(require('fastify-compression'), { threshold: 1024 });
 
 // cors
 fastify.register(require('fastify-cors'), {
@@ -18,7 +15,10 @@ fastify.register(require('fastify-cors'), {
   methods: ['GET', 'OPTIONS', 'POST']
 });
 
-// 超时限制
+// gzip
+fastify.register(require('fastify-compression'), { threshold: 1024 });
+
+// 防爬虫，分钟数请求限制
 fastify.register(require('fastify-rate-limit'), {
   max: 200, // default 1000
   timeWindow: 60 * 1000, // default 1000 * 60
@@ -35,6 +35,7 @@ fastify.register(require('fastify-rate-limit'), {
   }
 });
 
+// MYSQL
 fastify.register(require('fastify-mysql'), {
   promise: true,
   connectionString: `mysql://${config.user}:${config.password}@${config.host}:${
@@ -42,11 +43,19 @@ fastify.register(require('fastify-mysql'), {
   }/${config.database}`
 });
 
+// 自动加载路由
 fastify.register(AutoLoad, {
   dir: path.join(__dirname, 'services')
 });
 
-// fastify.register(require('fastify-response-time'));
+fastify.register(
+  helmet,
+  // Example of passing an option to x-powered-by middleware
+  {
+    hidePoweredBy: { setTo: 'PHP 4.2.0' },
+    referrerPolicy: { policy: 'origin' }
+  }
+);
 
 fastify.listen(3000, '0.0.0.0', (err, address) => {
   if (err) throw err;
