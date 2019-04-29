@@ -1,3 +1,5 @@
+const dayjs = require('dayjs');
+const etag = require('etag');
 // https://github.com/fastify/docs-chinese/blob/master/docs/Validation-and-Serialization.md
 // 使用序列化参数提高性能
 const queryStringJsonSchema = {
@@ -27,7 +29,7 @@ const paramsJsonSchema = {
   },
   required: ['id', 'nonce', '__cache']
 };
-const handleErr = ({ status, error, msg, ...data }, reply) => {
+const handleErr = ({ status = 200, error, msg, ...data }, reply, req) => {
   if (status > 299) {
     // const err = new Error();
     // err.statusCode = status;
@@ -36,7 +38,36 @@ const handleErr = ({ status, error, msg, ...data }, reply) => {
     reply.code(status).send({ statusCode: status, error, message: msg });
     return;
   }
+  let { cache } = data;
+  let prevEtag = req.headers['if-none-match'] || '';
+
+  // http协议缓存处理,参考：https://hapijs.com/tutorials/caching?lang=en_US
+  if (cache.cache) {
+    handleCache(cache, data, reply, prevEtag, status);
+    return;
+  }
   reply.send(data);
+};
+
+const handleCache = (cache, data, reply, prevEtag, status) => {
+  var nextEtag = etag(JSON.stringify(data.data));
+  if (prevEtag == nextEtag) {
+    status = 304;
+  }
+
+  if (cache.expires) {
+    reply
+      .header('expires', cache.expires)
+      .header('last-modified', cache.date)
+      .header('etag', nextEtag)
+      .status(status)
+      .send(data);
+  } else {
+    reply
+      .header('etag', nextEtag)
+      .status(status)
+      .send(data);
+  }
 };
 
 const resSchema = {

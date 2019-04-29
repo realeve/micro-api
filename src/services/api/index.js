@@ -11,7 +11,7 @@ module.exports = function(fastify, _, next) {
       },
       fastify
     );
-    handleErr(data, reply);
+    handleErr(data, reply, req);
   };
 
   const postCallback = function(req, reply) {

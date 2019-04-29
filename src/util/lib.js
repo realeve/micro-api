@@ -213,8 +213,13 @@ module.exports.handleReq = async (req, fastify) => {
     if (cache > 0) {
       let setCache = redis.setCache(client);
       redisRes.cache = {
-        date: now(),
-        expires: future(cache),
+        date: dayjs()
+          .toDate()
+          .toUTCString(), // last-modified
+        expires: dayjs()
+          .add(cache, 'seconds')
+          .toDate()
+          .toUTCString(),
         cache,
         from: 'redis'
       };
@@ -226,7 +231,9 @@ module.exports.handleReq = async (req, fastify) => {
 
     data = Object.assign(redisRes, {
       cache: {
-        from: 'database'
+        date: now(),
+        from: 'database',
+        cache
       }
     });
   } else {
