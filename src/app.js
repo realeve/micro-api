@@ -2,10 +2,20 @@
 
 const path = require('path');
 const AutoLoad = require('fastify-autoload');
+
 const { mysql: config } = require('./util/db');
 const fastify = require('fastify')({
   ignoreTrailingSlash: true
   // logger: false
+});
+
+// gzip
+// fastify.register(require('fastify-compression'), { threshold: 1024 });
+
+// cors
+fastify.register(require('fastify-cors'), {
+  origin: [/localhost(:\d+)$/, /127\.0\.0\.1(:\d+)$/],
+  methods: ['GET', 'OPTIONS', 'POST']
 });
 
 // 超时限制
