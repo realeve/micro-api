@@ -1,16 +1,34 @@
 'use strict';
 const lib = require('../../util/lib');
 const { opts, queryStringJsonSchema, handleErr } = require('../../util/schema');
-
+const Youch = require('youch');
+const throwErrHtml = (err, req, reply) => {
+  if (err && process.env.NODE_ENV !== 'production') {
+    const youch = new Youch(err, req);
+    youch
+      .addLink(({ message }) => {
+        const url = `https://stackoverflow.com/search?q=${encodeURIComponent(
+          message
+        )}`;
+        return `<a href="${url}" class="error-name" target="_blank" title="在 stackoverflow 搜索">在 stackoverflow 搜索解决方案</a>`;
+      })
+      .toHTML()
+      .then((html) => {
+        reply.header('content-type', 'text/html').send(html);
+      });
+  }
+};
 module.exports = function(fastify, _, next) {
   const handleData = async (req, reply, query) => {
-    let data = await lib.handleReq(
-      {
-        ...req,
-        query
-      },
-      fastify
-    );
+    let data = await lib
+      .handleReq(
+        {
+          ...req,
+          query
+        },
+        fastify
+      )
+      .catch((err) => throwErrHtml(err, req, reply));
     handleErr(data, reply, req);
   };
 
@@ -40,7 +58,9 @@ module.exports = function(fastify, _, next) {
     },
     async function(req, reply) {
       req.query.cache = (req.query.cache || 0) * 60;
-      let data = await lib.handleReq(req, fastify);
+      let data = await lib
+        .handleReq(req, fastify)
+        .catch((err) => throwErrHtml(err, req, reply));
       handleErr(data, reply);
     }
   );

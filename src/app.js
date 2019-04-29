@@ -4,6 +4,7 @@ const path = require('path');
 const AutoLoad = require('fastify-autoload');
 const helmet = require('fastify-helmet');
 const { mysql: config } = require('./util/db');
+
 const fastify = require('fastify')({
   ignoreTrailingSlash: true
   // logger: false

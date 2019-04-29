@@ -50,7 +50,7 @@ const handleErr = ({ status = 200, error, msg, ...data }, reply, req) => {
 };
 
 // cache test:http://localhost:3000/api/85/579209ce04/0.2
-const handleCache = (cache, data, reply, prevEtag, status) => {
+const handleCache = (cache, { time, ...data }, reply, prevEtag, status) => {
   let nextEtag = etag(JSON.stringify(data.data));
   let isChange = prevEtag === nextEtag;
 
@@ -62,6 +62,7 @@ const handleCache = (cache, data, reply, prevEtag, status) => {
       'cache-control',
       `must-revalidate,max-age=${cache.cache},s-maxage=${cache.cache}`
     )
+    .header('X-Response-Time', time)
     .status((status = isChange ? 304 : status));
 
   if (isChange) {
