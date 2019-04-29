@@ -53,8 +53,15 @@ const handleCache = (cache, data, reply, prevEtag, status) => {
   var nextEtag = etag(JSON.stringify(data.data));
   if (prevEtag == nextEtag) {
     status = 304;
+    // 返回304时不返回任何数据;
+    reply
+      .status(status)
+      .header('etag', nextEtag)
+      .send();
+    return;
   }
 
+  // 如果有expires字段，表明数据在redis中读取出来
   if (cache.expires) {
     reply
       .header('expires', cache.expires)
@@ -64,6 +71,7 @@ const handleCache = (cache, data, reply, prevEtag, status) => {
       .send(data);
   } else {
     reply
+      .header('last-modified', cache.date)
       .header('etag', nextEtag)
       .status(status)
       .send(data);

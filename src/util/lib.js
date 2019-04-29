@@ -231,7 +231,9 @@ module.exports.handleReq = async (req, fastify) => {
 
     data = Object.assign(redisRes, {
       cache: {
-        date: now(),
+        date: dayjs()
+          .toDate()
+          .toUTCString(),
         from: 'database',
         cache
       }
