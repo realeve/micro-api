@@ -12,8 +12,10 @@ const fastify = require('fastify')({
 
 // cors
 fastify.register(require('fastify-cors'), {
-  origin: [/localhost(:\d+)$/, /127\.0\.0\.1(:\d+)$/],
-  methods: ['GET', 'OPTIONS', 'POST']
+  origin: [/\:\/\/localhost(|:\d+)$/, /\:\/\/127\.0\.0\.1(|:\d+)$/],
+  methods: ['GET', 'OPTIONS', 'POST'],
+  credentials: true,
+  maxAge: 1728000
 });
 
 // gzip

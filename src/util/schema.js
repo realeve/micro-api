@@ -31,46 +31,58 @@ const paramsJsonSchema = {
 };
 const handleErr = ({ status = 200, error, msg, ...data }, reply, req) => {
   if (status > 299) {
-    // const err = new Error();
-    // err.statusCode = status;
-    // err.message = msg;
-    // throw err;
     reply.code(status).send({ statusCode: status, error, message: msg });
     return;
   }
   let { cache } = data;
-  let prevEtag = req.headers['if-none-match'] || '';
 
   // http协议缓存处理,参考：https://hapijs.com/tutorials/caching?lang=en_US
   if (cache.cache) {
-    handleCache(cache, data, reply, prevEtag, status);
+    handleCache(cache, data, reply, req, status);
     return;
   }
   reply.send(data);
 };
 
 // cache test:http://localhost:3000/api/85/579209ce04/0.2
-const handleCache = (cache, { time, ...data }, reply, prevEtag, status) => {
-  let nextEtag = etag(JSON.stringify(data.data));
-  let isChange = prevEtag === nextEtag;
+// 缓存策略更新完毕，跨域请求options不再请求，ajax动态请求在缓存期内返回200(from disk cache)，F5刷新返回304(Not Modified)
+const handleCache = (cache, { time, ...data }, reply, req, status) => {
+  // 最近更新时间
+  let lastModified = req.headers['if-modified-since'];
+  let prevEtag = req.headers['if-none-match'] || '';
+  let unChange = lastModified === cache.date;
 
   reply
     .header('last-modified', cache.date)
-    .header('etag', nextEtag)
+    .header('etag', prevEtag)
     .header('Connection', 'keep-alive')
     .header(
-      'cache-control',
+      'Cache-Control',
       `must-revalidate,max-age=${cache.cache},s-maxage=${cache.cache}`
     )
-    .header('X-Response-Time', time)
-    .status((status = isChange ? 304 : status));
+    .header('X-Response-Time', time);
 
-  if (isChange) {
+  // 返回304时不返回任何数据;
+  if (unChange) {
+    reply
+      .status(304)
+      .header('expires', cache.expires)
+      .send({});
+    return;
+  }
+
+  let nextEtag = etag(JSON.stringify(data.data));
+  unChange = prevEtag === nextEtag;
+
+  reply.status((status = unChange ? 304 : status));
+
+  if (unChange) {
     // 返回304时不返回任何数据;
     reply.header('expires', cache.expires).send({});
     return;
   }
 
+  reply.header('etag', nextEtag);
   // 如果有expires字段，表明数据在redis中读取出来
   if (cache.expires) {
     reply.header('expires', cache.expires).send(data);
