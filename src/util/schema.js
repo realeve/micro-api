@@ -1,4 +1,3 @@
-const dayjs = require('dayjs');
 const etag = require('etag');
 // https://github.com/fastify/docs-chinese/blob/master/docs/Validation-and-Serialization.md
 // 使用序列化参数提高性能
@@ -29,16 +28,17 @@ const paramsJsonSchema = {
   },
   required: ['id', 'nonce', '__cache']
 };
-const handleErr = ({ status = 200, error, msg, ...data }, reply, req) => {
+
+const handleStatus = ({ status = 200, error, msg, ...data }, reply, req) => {
   if (status > 299) {
     reply.code(status).send({ statusCode: status, error, message: msg });
     return;
   }
   let { cache } = data;
 
+  handleCache(cache, data, reply, req, status);
   // http协议缓存处理,参考：https://hapijs.com/tutorials/caching?lang=en_US
   if (cache.cache) {
-    handleCache(cache, data, reply, req, status);
     return;
   }
   reply.send(data);
@@ -46,49 +46,58 @@ const handleErr = ({ status = 200, error, msg, ...data }, reply, req) => {
 
 // cache test:http://localhost:3000/api/85/579209ce04/0.2
 // 缓存策略更新完毕，跨域请求options不再请求，ajax动态请求在缓存期内返回200(from disk cache)，F5刷新返回304(Not Modified)
+// 如果前台设置缓存为0，仍然视情况缓存数据：http://localhost:3000/api/86/d5405a6d22
 const handleCache = (cache, { time, ...data }, reply, req, status) => {
   // 最近更新时间
   let lastModified = req.headers['if-modified-since'];
   let prevEtag = req.headers['if-none-match'] || '';
   let unChange = lastModified === cache.date;
 
+  let useCache = cache.cache > 0;
+
   reply
-    .header('last-modified', cache.date)
     .header('etag', prevEtag)
     .header('Connection', 'keep-alive')
-    .header(
-      'Cache-Control',
-      `must-revalidate,max-age=${cache.cache},s-maxage=${cache.cache}`
-    )
     .header('X-Response-Time', time);
 
-  // 返回304时不返回任何数据;
-  if (unChange) {
+  if (useCache) {
     reply
-      .status(304)
-      .header('expires', cache.expires)
-      .send({});
+      .header('last-modified', cache.date)
+      .header(
+        'Cache-Control',
+        `must-revalidate,max-age=${cache.cache},s-maxage=${cache.cache}`
+      )
+      .header('expires', cache.expires);
+  }
+  // 返回304时不返回任何数据;
+  if (unChange && useCache) {
+    reply.status(304).send({});
     return;
   }
 
   let nextEtag = etag(JSON.stringify(data.data));
   unChange = prevEtag === nextEtag;
-
-  reply.status((status = unChange ? 304 : status));
+  reply.status(unChange ? 304 : status);
 
   if (unChange) {
+    // console.log(unChange, prevEtag, unChange ? 304 : status);
+    // 如果数据没有改变(ETag未变更),同时cache置为0(实时性要求较高),系统默认当前周期内数据未变更，前台缓存30秒
+    if (!useCache) {
+      reply
+        .header('last-modified', cache.date)
+        .header(
+          'Cache-Control',
+          `must-revalidate,max-age=${30},s-maxage=${30}`
+        );
+    }
     // 返回304时不返回任何数据;
-    reply.header('expires', cache.expires).send({});
+    reply.send({});
     return;
   }
 
   reply.header('etag', nextEtag);
   // 如果有expires字段，表明数据在redis中读取出来
-  if (cache.expires) {
-    reply.header('expires', cache.expires).send(data);
-  } else {
-    reply.send(data);
-  }
+  reply.send(data);
 };
 
 const resSchema = {
@@ -151,6 +160,6 @@ module.exports = {
   opts,
   paramsJsonSchema,
   queryStringJsonSchema,
-  handleErr,
+  handleStatus,
   responseSchema
 };

@@ -1,6 +1,10 @@
 'use strict';
 const lib = require('../../util/lib');
-const { opts, queryStringJsonSchema, handleErr } = require('../../util/schema');
+const {
+  opts,
+  queryStringJsonSchema,
+  handleStatus
+} = require('../../util/schema');
 const Youch = require('youch');
 const throwErrHtml = (err, req, reply) => {
   if (err && process.env.NODE_ENV !== 'production') {
@@ -29,7 +33,7 @@ module.exports = function(fastify, _, next) {
         fastify
       )
       .catch((err) => throwErrHtml(err, req, reply));
-    handleErr(data, reply, req);
+    handleStatus(data, reply, req);
   };
 
   const postCallback = function(req, reply) {
@@ -61,7 +65,7 @@ module.exports = function(fastify, _, next) {
       let data = await lib
         .handleReq(req, fastify)
         .catch((err) => throwErrHtml(err, req, reply));
-      handleErr(data, reply);
+      handleStatus(data, reply);
     }
   );
 

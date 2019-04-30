@@ -16,7 +16,7 @@ const getKey = (query) => {
   // }
   props = props || [];
   let propKey = Object.entries(props)
-    .map(([k, v]) => `${k}_${v}`)
+    .map(([k, v]) => `${k.replace('__', '')}_${v}`)
     .join('_');
   propKey = propKey.length ? `_${propKey}` : '';
   let cacheStr = cache ? '_' + cache : '';
@@ -190,10 +190,15 @@ module.exports.handleReq = async (req, fastify) => {
   // let client = redis.connect();
   let timeStart = new Date().getTime();
   let getCache = redis.getCache(client);
+  let { cache, mode } = req.query;
 
   let key = getKey(req.query);
-  let data = key ? await getCache(key) : null;
-  if (!data) {
+  let data;
+  if (cache > 0) {
+    data = key ? await getCache(key) : null;
+  }
+
+  if (cache == 0 || !data) {
     // console.log('read from redis')
     let result = await readDb(fastify, req.query);
 
@@ -202,8 +207,6 @@ module.exports.handleReq = async (req, fastify) => {
       // client.quit();
       return result;
     }
-
-    let { cache, mode } = req.query;
 
     // let redisRes = {
     //   ...result,
@@ -215,7 +218,9 @@ module.exports.handleReq = async (req, fastify) => {
       .toDate()
       .toUTCString();
 
-    if (cache > 0) {
+    // 对缓存不存在的同样做处理
+    // if (cache > 0)
+    {
       let setCache = redis.setCache(client);
       redisRes.cache = {
         date, // last-modified
