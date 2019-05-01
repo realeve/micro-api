@@ -60,7 +60,7 @@ const parseSql = (sql, param = '') => {
 module.exports.parseSql = parseSql;
 
 const readDb = async (fastify, params) => {
-  const connection = await fastify.mysql.getConnection();
+  const connection = await fastify.mysql['db1'].getConnection();
   let setting = await getApiSetting(connection, params);
   if (!setting) {
     return {

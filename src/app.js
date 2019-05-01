@@ -3,7 +3,8 @@
 const path = require('path');
 const AutoLoad = require('fastify-autoload');
 const helmet = require('fastify-helmet');
-const { mysql: config } = require('./util/db');
+const { mysql: mysqlCfg } = require('./config/db');
+const { kafka: kafkaCfg } = require('./config/kafka');
 
 const fastify = require('fastify')({
   ignoreTrailingSlash: true
@@ -43,10 +44,8 @@ fastify.register(require('fastify-rate-limit'), {
 
 // MYSQL
 fastify.register(require('fastify-mysql'), {
-  promise: true,
-  connectionString: `mysql://${config.user}:${config.password}@${config.host}:${
-    config.port
-  }/${config.database}`
+  ...mysqlCfg,
+  promise: true
 });
 
 // 自动加载路由
@@ -62,6 +61,9 @@ fastify.register(
     referrerPolicy: { policy: 'origin' }
   }
 );
+
+// kafka
+fastify.register(require('./plugins/kafka'), kafkaCfg);
 
 fastify.listen(3000, '0.0.0.0', (err, address) => {
   if (err) throw err;
