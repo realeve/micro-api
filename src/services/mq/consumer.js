@@ -5,9 +5,7 @@ const kafka = require('kafka-node'),
   logger = require('kafka-node/lib/logging')('kafka-node:Consumer');
 
 let payload = [
-  { topic: 'test' },
-  { topic: 'demo' },
-  { topic: 'topiccc' }
+  { topic: 'demo' }
   // { topic: 'connect-test' },
   // { topic: 'my-replicated-topic' }
 ];
